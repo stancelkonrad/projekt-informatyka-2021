@@ -8,18 +8,21 @@ Gra oparta na grze offline w przegl¹darce Google Chrome.
 #include <sfml/graphics.hpp>
 #include <iostream>
 #include <time.h>
+#include <windows.h>
 
 #define MENU_LINES 2
 
 #define HEIGHT_STAND 66
 
 #define START_POSITION_X 100
-#define START_POSITION_Y 450
+#define START_POSITION_Y 395
 
-#define SPRITE_WIDTH 24
-#define SPRITE_HEIGHT 24
-#define SPRITE_WALK_START 4
-#define SPRITE_WALK_END 9
+#define PLAYER_SPRITE_WIDTH 24
+#define PLAYER_SPRITE_HEIGHT 24
+#define PLAYER_SPRITE_WALK_START 4
+#define PLAYER_SPRITE_WALK_END 9
+#define PLAYER_SPRITE_JUMP 12
+
 
 class Menu
 {
@@ -109,11 +112,13 @@ private:
 	sf::Clock zegarPunkty;
 	sf::Clock zegarAnimacja;
 
+	bool jumping = false;
 	float ySpeed;
-	int punkty;
+	int punkty = 0;
 
-	void idzie();
-	void animacja();
+	void walk();
+	void jump(float dt);
+	void anim();
 
 public:
 	Player();
@@ -142,29 +147,50 @@ Player::Player()
 	spritesheet.loadFromFile("assets/dino.png");
 }
 
-void Player::idzie() {
-	self.setPosition(START_POSITION_X, START_POSITION_Y);
+void Player::walk() {
+	if (self.getPosition().y > START_POSITION_Y) {
+		jumping = false;
+		ySpeed = 0;
+		self.setPosition(self.getPosition().x, START_POSITION_Y);
+	}
 }
 
-void Player::animacja() {
-	int predkoscAnimacja = 100 - (int)clock.getElapsedTime().asSeconds();
-	float klatkaSzybkosc;
-	if (predkoscAnimacja < 30)
-		klatkaSzybkosc = 30;
-	else
-		klatkaSzybkosc = predkoscAnimacja;
-	int klatka = zegarAnimacja.getElapsedTime().asMilliseconds() / klatkaSzybkosc;
-	int spriteKlatka = SPRITE_WALK_START + klatka;
+void Player::jump(float dt) {
 
-	if (spriteKlatka > SPRITE_WALK_END) {
-		zegarAnimacja.restart();
-		spriteKlatka = SPRITE_WALK_START;
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && !jumping) {
+		jumping = true;
+		ySpeed = -1000;
 	}
-	tekstura.loadFromImage(spritesheet, sf::IntRect(spriteKlatka * SPRITE_WIDTH, 0, SPRITE_WIDTH, SPRITE_HEIGHT));
-	sprite.setTexture(tekstura);
-	sprite.setScale(sf::Vector2f(4, 4));
-	sprite.setOrigin(12.5f, 21);
+	if (jumping) {
+		ySpeed += 5000*dt;
+	}
+}
 
+void Player::anim() {
+
+	if (jumping) {
+	tekstura.loadFromImage(spritesheet, sf::IntRect(PLAYER_SPRITE_JUMP * PLAYER_SPRITE_WIDTH, 0, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT));
+	}
+	else
+	{
+		int predkoscAnimacja = 100 - (int)clock.getElapsedTime().asSeconds();
+		float klatkaSzybkosc;
+		if (predkoscAnimacja < 30)
+			klatkaSzybkosc = 30;
+		else
+			klatkaSzybkosc = predkoscAnimacja;
+		int klatka = zegarAnimacja.getElapsedTime().asMilliseconds() / klatkaSzybkosc;
+		int spriteKlatka = PLAYER_SPRITE_WALK_START + klatka;
+
+		if (spriteKlatka > PLAYER_SPRITE_WALK_END) {
+			zegarAnimacja.restart();
+			spriteKlatka = PLAYER_SPRITE_WALK_START;
+		}
+		tekstura.loadFromImage(spritesheet, sf::IntRect(spriteKlatka * PLAYER_SPRITE_WIDTH, 0, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT));
+		sprite.setTexture(tekstura);
+		sprite.setScale(sf::Vector2f(4, 4));
+		sprite.setOrigin(12.5f, 21);
+	}
 }
 
 sf::FloatRect Player::getGlobalBounds() {
@@ -173,14 +199,16 @@ sf::FloatRect Player::getGlobalBounds() {
 
 void Player::update(sf::RenderTarget& render, float dt) {
 
-	if (zegarPunkty.getElapsedTime().asSeconds() > 1) {
+	if (zegarPunkty.getElapsedTime().asMilliseconds() > 400) {
 		zegarPunkty.restart();
 		punkty += 1;
 	}
 
-	punktyTekst.setString("Score: " + std::to_string(punkty));
-	animacja();
-	idzie();
+	punktyTekst.setString("Points: " + std::to_string(punkty));
+	jump(dt);
+	anim();
+	self.move(0, ySpeed * dt);
+	walk();
 }
 
 void Player::draw(sf::RenderWindow& window) {
@@ -208,6 +236,10 @@ int main()
 {
 	sf::RenderWindow window(sf::VideoMode(800, 600), "Dino SFML");
 	Menu menu(window.getSize().x, window.getSize().y);
+	
+	sf::Texture background;
+	background.loadFromFile("assets/background.png");
+	sf::Sprite backgroundSprite(background, sf::IntRect(0,0,800,600));
 
 	Player player;
 	int menu_selected_flag = 0;
@@ -222,12 +254,8 @@ int main()
 			if (event.type == sf::Event::Closed)
 				window.close();
 
-
 			if (event.type == sf::Event::KeyPressed)
 			{
-				if (event.key.code == sf::Keyboard::Space)
-				{
-				}
 				if (event.key.code == sf::Keyboard::Up)
 				{
 					myDelay(100);
@@ -266,7 +294,7 @@ int main()
 		{
 			sf::Time czas = dtClock.restart();
 			float dt = czas.asSeconds();
-
+			window.draw(backgroundSprite);
 			player.update(window, dt);
 			player.draw(window);
 		}
