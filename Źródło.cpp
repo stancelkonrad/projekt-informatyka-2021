@@ -50,16 +50,16 @@ Menu::Menu(float width, float height)
 	title.setFont(font);
 	title.setFillColor(sf::Color::Black);
 	title.setString("DINO GAME");
-	title.setPosition(sf::Vector2f(width / 3, 10));
+	title.setPosition(sf::Vector2f((width / 2) - title.getLocalBounds().width / 2, 40));
 
 	menu[0].setFont(font);
 	menu[0].setFillColor(sf::Color::Black);
 	menu[0].setString("START");
-	menu[0].setPosition(sf::Vector2f(width / 2.5, height / (MENU_LINES) * 1));
+	menu[0].setPosition(sf::Vector2f((width / 2) - menu[0].getLocalBounds().width / 2, height / (MENU_LINES) * 1));
 	menu[1].setFont(font);
 	menu[1].setFillColor(sf::Color(120, 120, 120));
 	menu[1].setString("EXIT");
-	menu[1].setPosition(sf::Vector2f(20 + (width / 2.5), 50 + (height / (MENU_LINES) * 1)));
+	menu[1].setPosition(sf::Vector2f((width / 2) - menu[1].getLocalBounds().width / 2, 50 + (height / (MENU_LINES) * 1)));
 }
 
 void Menu::draw(sf::RenderWindow& window)
@@ -99,6 +99,82 @@ void Menu::przesunD()
 	}
 }
 
+class Pause
+{
+private:
+	sf::Font font;
+	sf::Text pause[2];
+	sf::Text title;
+	int selectedItem = 0;
+
+public:
+	Pause(float width, float height);
+	~Pause() {};
+	void przesunG();
+	void przesunD();
+	int getSelectedItem() { return selectedItem; };
+	void resetSelectedItem() { selectedItem = 0; };
+	void draw(sf::RenderWindow& window);
+};
+
+Pause::Pause(float width, float height)
+{
+	if (!font.loadFromFile("assets/SuperLegendBoy.ttf"))
+	{
+		return;
+	}
+	title.setFont(font);
+	title.setFillColor(sf::Color::Black);
+	title.setString("PAUSE");
+	title.setPosition(sf::Vector2f((width / 2) - title.getLocalBounds().width / 2, 40));
+
+	pause[0].setFont(font);
+	pause[0].setFillColor(sf::Color::Black);
+	pause[0].setString("CONTINUE");
+	pause[0].setPosition(sf::Vector2f((width / 2) - pause[0].getLocalBounds().width/2, height / (2) * 1));
+	pause[1].setFont(font);
+	pause[1].setFillColor(sf::Color(120, 120, 120));
+	pause[1].setString("MAIN MENU");
+	pause[1].setPosition(sf::Vector2f((width / 2) - pause[1].getLocalBounds().width / 2, 50 + (height / (2) * 1)));
+}
+
+void Pause::draw(sf::RenderWindow& window)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		window.draw(title);
+		window.draw(pause[i]);
+	}
+}
+
+void Pause::przesunG()
+{
+	if (selectedItem >= 0 && selectedItem < 2)
+	{
+		pause[selectedItem].setFillColor(sf::Color(120, 120, 120));
+		pause[selectedItem].setStyle(sf::Text::Regular);
+		selectedItem--;
+		if (selectedItem < 0)
+			selectedItem = 1;
+		pause[selectedItem].setFillColor(sf::Color::Black);
+		pause[selectedItem].setStyle(sf::Text::Bold);
+	}
+}
+
+void Pause::przesunD()
+{
+	if (selectedItem >= 0 && selectedItem < 2)
+	{
+		pause[selectedItem].setFillColor(sf::Color(120, 120, 120));
+		pause[selectedItem].setStyle(sf::Text::Regular);
+		selectedItem++;
+		if (selectedItem >= 2)
+			selectedItem = 0;
+		pause[selectedItem].setFillColor(sf::Color::Black);
+		pause[selectedItem].setStyle(sf::Text::Bold);
+	}
+}
+
 class Player {
 private:
 	sf::RectangleShape self;
@@ -125,6 +201,7 @@ public:
 	sf::FloatRect getGlobalBounds();
 	void update(sf::RenderTarget& render, float dt);
 	void draw(sf::RenderWindow& window);
+	void reset() { punkty = 0; };
 };
 
 Player::Player()
@@ -217,6 +294,7 @@ void Player::draw(sf::RenderWindow& window) {
 	window.draw(punktyTekst);
 }
 
+
 void myDelay(int opoznienie)
 {
 	sf::Clock zegar;
@@ -236,6 +314,7 @@ int main()
 {
 	sf::RenderWindow window(sf::VideoMode(800, 600), "Dino SFML");
 	Menu menu(window.getSize().x, window.getSize().y);
+	Pause pause(window.getSize().x, window.getSize().y);
 	
 	sf::Texture background;
 	background.loadFromFile("assets/background.png");
@@ -259,30 +338,55 @@ int main()
 				if (event.key.code == sf::Keyboard::Up)
 				{
 					myDelay(100);
-					menu.przesunG();
+					if (menu_selected_flag == 0)
+						menu.przesunG();
+					else if (menu_selected_flag == 3)
+						pause.przesunG();
 				}
 				if (event.key.code == sf::Keyboard::Down)
 				{
 					myDelay(100);
-					menu.przesunD();
+					if (menu_selected_flag == 0)
+						menu.przesunD();
+					else if (menu_selected_flag == 3)
+						pause.przesunD();
 				}
 				if (menu_selected_flag == 0)
 				{
 					if (event.key.code == sf::Keyboard::Enter && menu.getSelectedItem() == 0)
 					{
-						//std::cout << "Launching game\n";
+						std::cout << "Launching game\n";
 						menu_selected_flag = 1;
 					}
 					if (event.key.code == sf::Keyboard::Enter && menu.getSelectedItem() == 1)
 					{
-						//std::cout << "Exiting\n";
+						std::cout << "Exiting\n";
 						menu_selected_flag = 2;
+					}
+				}
+				if (menu_selected_flag == 3)
+				{
+					if (event.key.code == sf::Keyboard::Enter && pause.getSelectedItem() == 0)
+					{
+						std::cout << "Continue\n";
+						menu_selected_flag = 1;
+					}
+					if (event.key.code == sf::Keyboard::Enter && pause.getSelectedItem() == 1)
+					{
+						std::cout << "Going to main menu\n";
+						player.reset();
+						zegar.restart();
+						dtClock.restart();
+						menu_selected_flag = 0;
 					}
 				}
 				if (event.key.code == sf::Keyboard::Escape)
 				{
-					//std::cout << "Back to main menu\n";
-					menu_selected_flag = 0;
+					if (menu_selected_flag == 1)
+					{
+						std::cout << "Paused\n";
+						menu_selected_flag = 3;
+					}
 				}
 			}
 		}
@@ -290,7 +394,7 @@ int main()
 		window.clear(sf::Color::White);
 		if (menu_selected_flag == 0)
 			menu.draw(window);
-		if (menu_selected_flag == 1)
+		else if (menu_selected_flag == 1)
 		{
 			sf::Time czas = dtClock.restart();
 			float dt = czas.asSeconds();
@@ -298,8 +402,10 @@ int main()
 			player.update(window, dt);
 			player.draw(window);
 		}
-		if (menu_selected_flag == 2)
+		else if (menu_selected_flag == 2)
 			exit(0);
+		else if (menu_selected_flag == 3)
+			pause.draw(window);
 		window.display();
 	}
 	return 0;
