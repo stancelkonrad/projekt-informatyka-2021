@@ -14,6 +14,7 @@ Gra oparta na grze offline w przegl¹darce Google Chrome.
 #include <windows.h>
 
 #define MENU_LINES 3
+#define HELP_LINES 4
 
 #define HEIGHT_STAND 66
 
@@ -180,7 +181,7 @@ class Help
 {
 private:
 	sf::Font font;
-	sf::Text help[4];
+	sf::Text help[HELP_LINES];
 	sf::Text title;
 
 public:
@@ -220,12 +221,12 @@ Help::Help(float width, float height)
 	help[3].setFillColor(sf::Color::Black);
 	help[3].setString("ESC - EXIT");
 	help[3].setCharacterSize(20);
-	help[3].setPosition(sf::Vector2f((width / 2) - help[2].getLocalBounds().width / 2, 100 + (height / (2))));
+	help[3].setPosition(sf::Vector2f((width / 2) - help[3].getLocalBounds().width / 2, 150 + (height / (2))));
 }
 
 void Help::draw(sf::RenderWindow& window)
 {
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < HELP_LINES; i++)
 	{
 		window.draw(title);
 		window.draw(help[i]);
@@ -258,7 +259,12 @@ public:
 	sf::FloatRect getGlobalBounds();
 	void update(sf::RenderTarget& render, float dt);
 	void draw(sf::RenderWindow& window);
-	void reset() { punkty = 0; };
+	void reset() {
+		punkty = 0;
+		clock.restart();
+		zegarPunkty.restart();
+		zegarAnimacja.restart();
+	};
 };
 
 Player::Player()
