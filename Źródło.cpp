@@ -12,6 +12,7 @@ Gra oparta na grze offline w przegl¹darce Google Chrome.
 #include <iostream>
 #include <time.h>
 #include <windows.h>
+#include <string>
 
 #define MENU_LINES 3
 #define HELP_LINES 4
@@ -177,6 +178,143 @@ void Pause::przesunD()
 	}
 }
 
+class DifficultyMenu
+{
+private:
+	sf::Font font;
+	sf::Text difficultyMenu[2];
+	sf::Text title;
+	int selectedItem = 0;
+
+public:
+	DifficultyMenu(float width, float height);
+	~DifficultyMenu() {};
+	void przesunG();
+	void przesunD();
+	int getSelectedItem() { return selectedItem; };
+	void resetSelectedItem() { selectedItem = 0; };
+	void draw(sf::RenderWindow& window);
+};
+
+DifficultyMenu::DifficultyMenu(float width, float height)
+{
+	if (!font.loadFromFile("assets/SuperLegendBoy.ttf"))
+	{
+		return;
+	}
+	title.setFont(font);
+	title.setFillColor(sf::Color::Black);
+	title.setString("CHOOSE DIFFICULTY");
+	title.setStyle(sf::Text::Bold);
+	title.setPosition(sf::Vector2f((width / 2) - title.getLocalBounds().width / 2, 40));
+
+	difficultyMenu[0].setFont(font);
+	difficultyMenu[0].setFillColor(sf::Color::Black);
+	difficultyMenu[0].setString("EASY");
+	difficultyMenu[0].setPosition(sf::Vector2f((width / 2) - difficultyMenu[0].getLocalBounds().width / 2, height / (2) * 1));
+	difficultyMenu[1].setFont(font);
+	difficultyMenu[1].setFillColor(sf::Color(120, 120, 120));
+	difficultyMenu[1].setString("HARD");
+	difficultyMenu[1].setPosition(sf::Vector2f((width / 2) - difficultyMenu[1].getLocalBounds().width / 2, 50 + (height / (2) * 1)));
+}
+
+void DifficultyMenu::draw(sf::RenderWindow& window)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		window.draw(title);
+		window.draw(difficultyMenu[i]);
+	}
+}
+
+void DifficultyMenu::przesunG()
+{
+	if (selectedItem >= 0 && selectedItem < 2)
+	{
+		difficultyMenu[selectedItem].setFillColor(sf::Color(120, 120, 120));
+		selectedItem--;
+		if (selectedItem < 0)
+			selectedItem = 1;
+		difficultyMenu[selectedItem].setFillColor(sf::Color::Black);
+	}
+}
+
+void DifficultyMenu::przesunD()
+{
+	if (selectedItem >= 0 && selectedItem < 2)
+	{
+		difficultyMenu[selectedItem].setFillColor(sf::Color(120, 120, 120));
+		selectedItem++;
+		if (selectedItem >= 2)
+			selectedItem = 0;
+		difficultyMenu[selectedItem].setFillColor(sf::Color::Black);
+	}
+}
+
+class PlayerNameMenu
+{
+private:
+	sf::Font font;
+	sf::Text playerName;
+	sf::Text title[2];
+	std::string Name = "KRZYCHU";
+	int selectedItem = 0;
+
+public:
+	PlayerNameMenu(float width, float height);
+	~PlayerNameMenu() {};
+	std::string getName() { return Name; };
+	void addLetter(char letter);
+	void removeLetter();
+	void draw(sf::RenderWindow& window);
+};
+
+void PlayerNameMenu::addLetter(char letter)
+{ 
+	Name += std::string(1, letter); 
+	playerName.setString(Name + "_");
+}
+
+void PlayerNameMenu::removeLetter()
+{
+	if (!Name.empty())
+		Name.pop_back(); 
+	playerName.setString(Name + "_"); 
+	std::cout << Name;
+}
+
+PlayerNameMenu::PlayerNameMenu(float width, float height)
+{
+	if (!font.loadFromFile("assets/SuperLegendBoy.ttf"))
+	{
+		return;
+	}
+	title[0].setFont(font);
+	title[0].setFillColor(sf::Color::Black);
+	title[0].setString("GAME OVER");
+	title[0].setStyle(sf::Text::Bold);
+	title[0].setPosition(sf::Vector2f((width / 2) - title[0].getLocalBounds().width / 2, 40));
+	title[1].setFont(font);
+	title[1].setFillColor(sf::Color::Black);
+	title[1].setString("ENTER PLAYER NAME");
+	title[1].setStyle(sf::Text::Regular);
+	title[1].setPosition(sf::Vector2f((width / 2) - title[1].getLocalBounds().width / 2, 80));
+
+	playerName.setFont(font);
+	playerName.setFillColor(sf::Color::Black);
+	playerName.setString(Name + "_");
+	playerName.setPosition(sf::Vector2f((width / 2) - playerName.getLocalBounds().width / 2, height / (2) * 1));
+}
+
+void PlayerNameMenu::draw(sf::RenderWindow& window)
+{
+	for (int i = 0; i < 2; i++)
+	{
+		window.draw(title[i]);
+		window.draw(playerName);
+	}
+}
+
 class Help
 {
 private:
@@ -265,6 +403,7 @@ public:
 		zegarPunkty.restart();
 		zegarAnimacja.restart();
 	};
+	int getPoints() { return punkty; };
 };
 
 Player::Player()
@@ -279,7 +418,7 @@ Player::Player()
 		return;
 	}
 	punktyTekst.setFont(font);
-	punktyTekst.setPosition(40, 40);
+	punktyTekst.setPosition(20, 20);
 	punktyTekst.setCharacterSize(24);
 	punktyTekst.setFillColor(sf::Color::Black);
 	punktyTekst.setString("Score: 0");
@@ -370,14 +509,9 @@ void players_to_file()
 	FILE* file;
 	file = fopen("players.dat", "w+b");
 
-	strcpy(playerschar[0].nazwa, "EMPTY");
-	strcpy(playerschar[1].nazwa, "EMPTY");
-	strcpy(playerschar[2].nazwa, "EMPTY");
-	strcpy(playerschar[3].nazwa, "EMPTY");
-	strcpy(playerschar[4].nazwa, "EMPTY");
-
 	for (int i = 0; i < 5; i++)
 	{
+		strcpy(playerschar[i].nazwa, "EMPTY");
 		playerschar[i].liczb_pkt = 0;
 	}
 
@@ -460,7 +594,7 @@ players_list::players_list(int N)
 	ile_graczy = rozmiar_plik / sizeof(playersPoints);
 	if (N > ile_graczy)
 	{
-		Np = 5;
+		Np = 20;
 	}
 	else
 	{
@@ -518,7 +652,7 @@ void players_list::sort()
 
 void players_list::draw(sf::RenderWindow& window)
 {
-	for (int i = 0; i < Np; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		window.draw(title);
 		window.draw(players[i]);
@@ -546,7 +680,10 @@ int main()
 	Menu menu(window.getSize().x, window.getSize().y);
 	Pause pause(window.getSize().x, window.getSize().y);
 	Help help(window.getSize().x, window.getSize().y);
-	
+	DifficultyMenu difficultyMenu(window.getSize().x, window.getSize().y);
+	PlayerNameMenu gameover(window.getSize().x, window.getSize().y);
+	int difficulty;
+
 	sf::Texture background;
 	background.loadFromFile("assets/background.png");
 	sf::Sprite backgroundSprite(background, sf::IntRect(0,0,800,600));
@@ -557,17 +694,14 @@ int main()
 	sf::Clock dtClock;
 	FILE* file;
 	if (file = fopen("players.dat", "r"))
-		std::cout << "'players.dat' already exists";
+		std::cout << "'players.dat' already exists\n";
 	else
 	{
-		std::cout << "Creating new 'players.dat'";
+		std::cout << "Creating new 'players.dat'\n";
 		players_to_file();
 	}
 	playersPoints pl1;
-	//strcpy(pl1.nazwa, "Guy");
-	//pl1.liczb_pkt = 18000;
 	players_list* highscores = new players_list(5);
-	//pl->zapisz(pl1);
 	highscores->sort();
 	highscores->load();
 
@@ -578,9 +712,29 @@ int main()
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
-
+			if (menu_selected_flag == 7 && event.type == sf::Event::TextEntered && event.key.code != 8)
+			{
+					if (event.text.unicode < 0x80)
+					{
+						gameover.addLetter((char)event.text.unicode);
+						gameover.draw(window);
+					}
+			}
 			if (event.type == sf::Event::KeyPressed)
 			{
+				if (menu_selected_flag == 7 && event.key.code == sf::Keyboard::Enter)
+				{
+					strcpy(pl1.nazwa, gameover.getName().c_str());
+					pl1.liczb_pkt = player.getPoints();
+					highscores->save(pl1);
+					std::cout << "Displaying Highscores\n";
+					menu_selected_flag = 5;
+					highscores->sort();
+				}
+				if (menu_selected_flag == 7 && event.key.code == sf::Keyboard::BackSpace)
+				{
+					gameover.removeLetter();
+				}
 				if (event.key.code == sf::Keyboard::Up)
 				{
 					myDelay(100);
@@ -588,6 +742,8 @@ int main()
 						menu.przesunG();
 					else if (menu_selected_flag == 3)
 						pause.przesunG();
+					else if (menu_selected_flag == 6)
+						difficultyMenu.przesunG();
 				}
 				if (event.key.code == sf::Keyboard::Down)
 				{
@@ -596,13 +752,29 @@ int main()
 						menu.przesunD();
 					else if (menu_selected_flag == 3)
 						pause.przesunD();
+					else if (menu_selected_flag == 6)
+						difficultyMenu.przesunG();
+				}
+				if (menu_selected_flag == 6)
+				{
+					if (event.key.code == sf::Keyboard::Enter && difficultyMenu.getSelectedItem() == 0)
+					{
+						menu_selected_flag = 1;
+						std::cout << "Easy mode\n";
+					}
+					if (event.key.code == sf::Keyboard::Enter && difficultyMenu.getSelectedItem() == 1)
+					{
+						menu_selected_flag = 1;
+						std::cout << "Hard mode\n";
+					}
 				}
 				if (menu_selected_flag == 0)
 				{
 					if (event.key.code == sf::Keyboard::Enter && menu.getSelectedItem() == 0)
 					{
 						std::cout << "Launching game\n";
-						menu_selected_flag = 1;
+						menu_selected_flag = 6;
+						myDelay(100);
 					}
 					if (event.key.code == sf::Keyboard::Enter && menu.getSelectedItem() == 1)
 					{
@@ -648,6 +820,11 @@ int main()
 						std::cout << "Going to main menu\n";
 						menu_selected_flag = 0;
 					}
+					if (menu_selected_flag == 6)
+					{
+						std::cout << "Going to main menu\n";
+						menu_selected_flag = 0;
+					}
 				}
 				if (event.key.code == sf::Keyboard::Pause)
 				{
@@ -664,6 +841,14 @@ int main()
 						std::cout << "Help window\n";
 						menu_selected_flag = 4;
 					}
+				}
+				if (event.key.code == sf::Keyboard::F2)
+				{
+					menu_selected_flag = 7;
+
+					player.reset();
+					zegar.restart();
+					dtClock.restart();
 				}
 			}
 		}
@@ -686,7 +871,15 @@ int main()
 		else if (menu_selected_flag == 4)
 			help.draw(window);
 		else if (menu_selected_flag == 5)
+		{
+			//highscores->sort();
+			highscores->load();
 			highscores->draw(window);
+		}
+		else if (menu_selected_flag == 6)
+			difficultyMenu.draw(window);
+		else if (menu_selected_flag == 7)
+			gameover.draw(window);
 		window.display();
 	}
 	return 0;
