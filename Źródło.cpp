@@ -257,7 +257,7 @@ private:
 	sf::Font font;
 	sf::Text playerName;
 	sf::Text title[2];
-	std::string Name = "KRZYCHU";
+	std::string Name = "";
 	int selectedItem = 0;
 
 public:
@@ -267,6 +267,7 @@ public:
 	void addLetter(char letter);
 	void removeLetter();
 	void draw(sf::RenderWindow& window);
+	void refresh(float width, float height);
 };
 
 void PlayerNameMenu::addLetter(char letter)
@@ -279,8 +280,7 @@ void PlayerNameMenu::removeLetter()
 {
 	if (!Name.empty())
 		Name.pop_back(); 
-	playerName.setString(Name + "_"); 
-	std::cout << Name;
+	playerName.setString(Name + "_");
 }
 
 PlayerNameMenu::PlayerNameMenu(float width, float height)
@@ -313,6 +313,12 @@ void PlayerNameMenu::draw(sf::RenderWindow& window)
 		window.draw(title[i]);
 		window.draw(playerName);
 	}
+}
+
+void PlayerNameMenu::refresh(float width, float height)
+{
+	playerName.setString(Name + "_");
+	playerName.setPosition(sf::Vector2f((width / 2) - playerName.getLocalBounds().width / 2, height / (2) * 1));
 }
 
 class Help
@@ -879,7 +885,10 @@ int main()
 		else if (menu_selected_flag == 6)
 			difficultyMenu.draw(window);
 		else if (menu_selected_flag == 7)
+		{
+			gameover.refresh(window.getSize().x, window.getSize().y);
 			gameover.draw(window);
+		}
 		window.display();
 	}
 	return 0;
