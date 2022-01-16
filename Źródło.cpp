@@ -1,12 +1,13 @@
-/*
+ï»¿/*
 Temat projektu: Gra dinozaur
-Zakres indywidualny: Gra polega na poruszaniu siê dinozaurem i unikaniu przeszkód.
-Z biegiem czasu prêdkoœæ gry (animacji i tworzenia przeszkód) przyspiesza i pojawia siê wiêcej przeszkód.
-Gra oparta na grze offline w przegl¹darce Google Chrome.
+Zakres indywidualny: Gra polega na poruszaniu siÄ™ dinozaurem i unikaniu przeszkÃ³d.
+Z biegiem czasu prÄ™dkoÅ›Ä‡ gry (animacji i tworzenia przeszkÃ³d) przyspiesza i pojawia siÄ™ wiÄ™cej przeszkÃ³d.
+Gra oparta na grze offline w przeglÄ…darce Google Chrome.
 */
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+
 
 #include <sfml/graphics.hpp>
 #include <iostream>
@@ -15,19 +16,39 @@ Gra oparta na grze offline w przegl¹darce Google Chrome.
 #include <string>
 
 #define MENU_LINES 3
-#define HELP_LINES 4
+#define HELP_LINES 5
 
 #define HEIGHT_STAND 66
 
 #define START_POSITION_X 100
 #define START_POSITION_Y 395
 
+#define OBSTACLE_SPAWN_X 810
+#define OBSTACLE_SPAWN_Y 395
+
 #define PLAYER_SPRITE_WIDTH 24
 #define PLAYER_SPRITE_HEIGHT 24
 #define PLAYER_SPRITE_WALK_START 4
 #define PLAYER_SPRITE_WALK_END 9
 #define PLAYER_SPRITE_JUMP 12
+#define PLAYER_SPRITE_DEAD 14
 
+
+
+void myDelay(int opoznienie)
+{
+	sf::Clock zegar;
+	sf::Time czas;
+	while (1)
+	{
+		czas = zegar.getElapsedTime();
+		if (czas.asMilliseconds() > opoznienie)
+		{
+			zegar.restart();
+			break;
+		}
+	}
+}
 
 class Menu
 {
@@ -256,7 +277,7 @@ class PlayerNameMenu
 private:
 	sf::Font font;
 	sf::Text playerName;
-	sf::Text title[2];
+	sf::Text title[3];
 	std::string Name = "";
 	int selectedItem = 0;
 
@@ -363,9 +384,14 @@ Help::Help(float width, float height)
 	help[2].setPosition(sf::Vector2f((width / 2) - help[2].getLocalBounds().width / 2, 100 + (height / (2))));
 	help[3].setFont(font);
 	help[3].setFillColor(sf::Color::Black);
-	help[3].setString("ESC - EXIT");
+	help[3].setString("INSTANT DEATH - F2");
 	help[3].setCharacterSize(20);
 	help[3].setPosition(sf::Vector2f((width / 2) - help[3].getLocalBounds().width / 2, 150 + (height / (2))));
+	help[4].setFont(font);
+	help[4].setFillColor(sf::Color::Black);
+	help[4].setString("ESC - EXIT");
+	help[4].setCharacterSize(20);
+	help[4].setPosition(sf::Vector2f((width / 2) - help[4].getLocalBounds().width / 2, 200 + (height / (2))));
 }
 
 void Help::draw(sf::RenderWindow& window)
@@ -393,6 +419,7 @@ private:
 	bool jumping = false;
 	float ySpeed;
 	int punkty = 0;
+	bool isDead = false;
 
 	void walk();
 	void jump(float dt);
@@ -408,8 +435,14 @@ public:
 		clock.restart();
 		zegarPunkty.restart();
 		zegarAnimacja.restart();
-	};
+		isDead = false;
+	}
 	int getPoints() { return punkty; };
+	void dead() {
+		isDead = true;
+		anim();
+	};
+	bool isPlayerDead() { return isDead; };
 };
 
 Player::Player()
@@ -447,14 +480,24 @@ void Player::jump(float dt) {
 		ySpeed = -1000;
 	}
 	if (jumping) {
-		ySpeed += 5000*dt;
+		ySpeed += 3300*dt;
 	}
 }
 
-void Player::anim() {
+void Player::draw(sf::RenderWindow& window) {
+	sprite.setPosition(self.getPosition());
+	window.draw(sprite);
+	window.draw(punktyTekst);
+}
 
-	if (jumping) {
-	tekstura.loadFromImage(spritesheet, sf::IntRect(PLAYER_SPRITE_JUMP * PLAYER_SPRITE_WIDTH, 0, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT));
+void Player::anim() {
+	if (isDead) {
+		tekstura.loadFromImage(spritesheet, sf::IntRect(PLAYER_SPRITE_DEAD * PLAYER_SPRITE_WIDTH, 0, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT));
+		myDelay(1000);
+		return;
+	}
+	else if (jumping) {
+		tekstura.loadFromImage(spritesheet, sf::IntRect(PLAYER_SPRITE_JUMP * PLAYER_SPRITE_WIDTH, 0, PLAYER_SPRITE_WIDTH, PLAYER_SPRITE_HEIGHT));
 	}
 	else
 	{
@@ -483,7 +526,11 @@ sf::FloatRect Player::getGlobalBounds() {
 }
 
 void Player::update(sf::RenderTarget& render, float dt) {
-
+	if (isDead)
+	{
+		anim();
+		return;
+	}
 	if (zegarPunkty.getElapsedTime().asMilliseconds() > 400) {
 		zegarPunkty.restart();
 		punkty += 1;
@@ -496,11 +543,6 @@ void Player::update(sf::RenderTarget& render, float dt) {
 	walk();
 }
 
-void Player::draw(sf::RenderWindow& window) {
-	sprite.setPosition(self.getPosition());
-	window.draw(sprite);
-	window.draw(punktyTekst);
-}
 
 typedef struct {
 	char nazwa[20];
@@ -665,19 +707,120 @@ void players_list::draw(sf::RenderWindow& window)
 	}
 }
 
-void myDelay(int opoznienie)
-{
-	sf::Clock zegar;
-	sf::Time czas;
-	while (1)
-	{
-		czas = zegar.getElapsedTime();
-		if (czas.asMilliseconds() > opoznienie)
-		{
-			zegar.restart();
-			break;
+class Obstacle {
+private:
+	sf::RectangleShape self;
+	sf::Image spritesheet;
+	sf::Sprite sprite;
+	sf::Texture texture;
+	sf::Clock animClock;
+	float speed;
+public:
+	explicit Obstacle(float speed);
+	void setPosition(sf::Vector2f vec2f);
+	sf::Vector2f getPosition();
+	sf::FloatRect getGlobalBounds();
+	void update(float dt);
+	void draw(sf::RenderWindow& render);
+};
+
+Obstacle::Obstacle(float speed) {
+
+	spritesheet.loadFromFile("assets/cactus.png");
+	this->speed = speed;
+	self = sf::RectangleShape(sf::Vector2f(10, 14));
+	self.setFillColor(sf::Color::Red);
+
+}
+
+void Obstacle::setPosition(sf::Vector2f vec2f) {
+	self.setPosition(vec2f);
+}
+
+sf::Vector2f Obstacle::getPosition() {
+	return self.getPosition();
+}
+
+sf::FloatRect Obstacle::getGlobalBounds() {
+	return self.getGlobalBounds();
+}
+
+void Obstacle::draw(sf::RenderWindow& window) {
+	sprite.setPosition(self.getPosition());
+	window.draw(sprite);
+}
+
+void Obstacle::update(float dt) {
+	texture.loadFromImage(spritesheet, sf::IntRect(0, 0, 10, 14));
+	sprite.setTexture(texture);
+	sprite.setScale(sf::Vector2f(-4, 4));
+	sprite.setOrigin(0, 14);
+	self.move(-this->speed * dt *0.5, 0);
+}
+
+class ObstacleGenerator {
+private:
+	std::vector <Obstacle> self;
+	Player& player;
+	sf::Clock clock;
+	sf::Clock spawnClock;
+	void add(sf::Vector2f vec2f);
+	int difficulty = 0;
+public:
+	explicit ObstacleGenerator(Player& ref_player);
+	void spawn();
+	void update(float dt);
+	void draw(sf::RenderWindow& render);
+	void reset();
+};
+
+ObstacleGenerator::ObstacleGenerator(Player& ref_player) : player(ref_player) {
+}
+
+void ObstacleGenerator::add(sf::Vector2f vec2f) {
+	float multiplier = clock.getElapsedTime().asSeconds();
+	Obstacle obstacle(500 + multiplier * 10);
+	obstacle.setPosition(vec2f);
+	self.push_back(obstacle);
+}
+
+void ObstacleGenerator::spawn() {
+	float time = spawnClock.getElapsedTime().asSeconds();
+	float multiplier = clock.getElapsedTime().asSeconds();
+	if (time > 1 - (multiplier * 0.01)) {
+		spawnClock.restart();
+		add(sf::Vector2f(OBSTACLE_SPAWN_X, OBSTACLE_SPAWN_Y));
+	}
+}
+
+void ObstacleGenerator::update(float dt) {
+	spawn();
+
+	for (auto obstacle = self.begin(); obstacle != self.end();) {
+		obstacle->update(dt);
+		if (obstacle->getGlobalBounds().intersects(player.getGlobalBounds())) {
+			std::cout << "DEAD";
+			player.dead();
+		}
+		if (obstacle->getPosition().x < -50) {
+			obstacle = self.erase(obstacle);
+		}
+		else {
+			++obstacle;
 		}
 	}
+}
+
+void ObstacleGenerator::draw(sf::RenderWindow& render) {
+	for (auto& obstacle : self) {
+		obstacle.draw(render);
+	}
+}
+
+void ObstacleGenerator::reset() {
+	clock.restart();
+	spawnClock.restart();
+	self = std::vector<Obstacle>();
 }
 
 int main()
@@ -688,13 +831,16 @@ int main()
 	Help help(window.getSize().x, window.getSize().y);
 	DifficultyMenu difficultyMenu(window.getSize().x, window.getSize().y);
 	PlayerNameMenu gameover(window.getSize().x, window.getSize().y);
-	int difficulty;
+
+	Player player;
+	ObstacleGenerator obstacleGenerator(player);
+
+
 
 	sf::Texture background;
 	background.loadFromFile("assets/background.png");
 	sf::Sprite backgroundSprite(background, sf::IntRect(0,0,800,600));
 
-	Player player;
 	int menu_selected_flag = 0;
 	sf::Clock zegar;
 	sf::Clock dtClock;
@@ -734,6 +880,10 @@ int main()
 					pl1.liczb_pkt = player.getPoints();
 					highscores->save(pl1);
 					std::cout << "Displaying Highscores\n";
+					obstacleGenerator.reset();
+					player.reset();
+					zegar.restart();
+					dtClock.restart();
 					menu_selected_flag = 5;
 					highscores->sort();
 				}
@@ -803,6 +953,7 @@ int main()
 					if (event.key.code == sf::Keyboard::Enter && pause.getSelectedItem() == 1)
 					{
 						std::cout << "Going to main menu\n";
+						obstacleGenerator.reset();
 						player.reset();
 						zegar.restart();
 						dtClock.restart();
@@ -850,15 +1001,11 @@ int main()
 				}
 				if (event.key.code == sf::Keyboard::F2)
 				{
-					menu_selected_flag = 7;
-
-					player.reset();
-					zegar.restart();
-					dtClock.restart();
+					std::cout << "DEAD\n";
+					player.dead();
 				}
 			}
 		}
-
 		window.clear(sf::Color::White);
 		if (menu_selected_flag == 0)
 			menu.draw(window);
@@ -867,8 +1014,15 @@ int main()
 			sf::Time czas = dtClock.restart();
 			float dt = czas.asSeconds();
 			window.draw(backgroundSprite);
+			obstacleGenerator.update(dt);
 			player.update(window, dt);
+			obstacleGenerator.draw(window);
 			player.draw(window);
+			if (player.isPlayerDead())
+			{
+				myDelay(1000);
+				menu_selected_flag = 7;
+			}
 		}
 		else if (menu_selected_flag == 2)
 			exit(0);
